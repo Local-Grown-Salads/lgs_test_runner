@@ -1,5 +1,5 @@
 # Credentials - NEVER commit these
-credentials.json
+clients_secrets.json
 token.json
 .env
 
