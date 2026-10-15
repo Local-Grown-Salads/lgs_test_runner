@@ -1,0 +1,51 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy via rsync
+        run: |
+          rsync -avz --delete \
+            --exclude='.git' \
+            --exclude='__pycache__' \
+            --exclude='.venv' \
+            --exclude='token.json' \
+            --exclude='.env' \
+            --exclude='client_secrets.json' \
+            -e "ssh -o StrictHostKeyChecking=no" \
+            ./ "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.WORK_DIR }}/"
+
+      - name: Install dependencies and restart service
+        run: |
+          ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" << EOF
+            cd ${{ secrets.WORK_DIR }}
+
+            # Install uv if not present
+            if ! command -v uv &> /dev/null; then
+              curl -LsSf https://astral.sh/uv/install.sh | sh
+            fi
+            export PATH="\$HOME/.local/bin:\$PATH"
+
+            # Install dependencies
+            uv sync --no-dev
+
+            # Restart service if configured
+            sudo systemctl restart sheet-test-runner 2>/dev/null || echo "Service not configured yet"
+          EOF
