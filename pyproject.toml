@@ -1,0 +1,16 @@
+[project]
+name = "sheet-test-runner"
+version = "0.1.0"
+description = "Run tests from Google Sheets and report results back"
+requires-python = ">=3.10"
+dependencies = [
+    "gspread>=6.0.0",
+    "google-auth>=2.0.0",
+    "google-auth-oauthlib>=1.0.0",
+    "python-dotenv>=1.0.0",
+    "fastapi>=0.110.0",
+    "uvicorn>=0.29.0",
+]
+
+[tool.uv]
+dev-dependencies = []

@@ -1,0 +1,25 @@
+# Systemd service file for Sheet Test Runner
+# Install: sudo cp sheet-test-runner.service /etc/systemd/system/
+# Enable:  sudo systemctl enable sheet-test-runner
+# Start:   sudo systemctl start sheet-test-runner
+# Logs:    sudo journalctl -u sheet-test-runner -f
+
+[Unit]
+Description=Sheet Test Runner API
+After=network.target
+
+[Service]
+Type=simple
+User=YOUR_USER
+WorkingDirectory=/path/to/sheet_script
+Environment="PATH=/home/YOUR_USER/.local/bin:/usr/local/bin:/usr/bin"
+
+# Load service account credentials from env file
+EnvironmentFile=/path/to/sheet_script/.env
+
+ExecStart=/home/YOUR_USER/.local/bin/uv run uvicorn server:app --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
