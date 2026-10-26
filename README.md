@@ -2,6 +2,31 @@
 
 Run tests defined in a Google Sheet and update results directly in the spreadsheet. Green cells for pass, red for fail.
 
+## Workflow
+
+```
+┌─────────────────────┐
+│   Google Sheet      │
+│  (test definitions) │
+└──────────┬──────────┘
+           │
+           │ pull test cases
+           ▼
+┌─────────────────────┐
+│     runner.py       │
+│  - parses input     │
+│  - calls services   │
+│  - compares output  │
+└──────────┬──────────┘
+           │
+           │ update status column
+           ▼
+┌─────────────────────┐
+│   Google Sheet      │
+│  (PASS/FAIL + color)│
+└─────────────────────┘
+```
+
 ## Spreadsheet Format
 
 Your Google Sheet needs these columns:
@@ -11,45 +36,48 @@ Your Google Sheet needs these columns:
 | add_basic | add | 1, 2 | 3 | |
 | concat_test | concat | "hello", " world" | hello world | |
 
-- **test_name**: descriptive name
-- **service**: function to call (see `services.py`)
-- **input**: comma-separated arguments
+### Column Definitions
+
+- **test_name**: descriptive name for the test case
+- **service**: function to call (must exist in `services.py`)
+- **input**: comma-separated arguments (see format below)
 - **expected**: expected return value
-- **status**: updated automatically with PASS/FAIL
+- **status**: leave blank — updated automatically with PASS/FAIL
 
-## Local Development
+### Input Cell Format
 
-### Setup
+The `input` column accepts comma-separated arguments:
+
+| Type | Format | Example |
+|------|--------|---------|
+| Integer | bare number | `1, 2, 3` |
+| Float | number with decimal | `3.14, 2.0` |
+| String | quoted | `"hello", "world"` |
+| Mixed | combine types | `1, "foo", 3.5` |
+
+**Examples:**
+
+```
+1, 2                    → [1, 2]           (integers)
+"hello", " world"       → ["hello", " world"] (strings)
+3.14, 2                 → [3.14, 2]        (float + int)
+"prefix", 100, "suffix" → ["prefix", 100, "suffix"]
+```
+
+## Quick Start
 
 ```bash
 # Install dependencies
 uv sync
 
-# Set up Google OAuth credentials (one-time)
-# 1. Go to Google Cloud Console
-# 2. Create OAuth 2.0 credentials (Desktop app)
-# 3. Download JSON as client_secrets.json
-
-# Create .env
+# Create .env with your spreadsheet ID
 cp .env.example .env
-# Edit with your spreadsheet ID
-```
 
-### Run Tests
-
-```bash
+# Run tests
 uv run python runner.py
 ```
 
 First run opens browser for Google auth. Token is saved for future runs.
-
-### Run Server (for Sheets integration)
-
-```bash
-uv run python server.py
-```
-
-Then add `apps_script.js` to your sheet (Extensions → Apps Script) to get a "Run Tests" button.
 
 ## Adding Services
 
@@ -65,45 +93,18 @@ SERVICES = {
 }
 ```
 
-## Server Deployment
+## Running the Server
 
-### GitHub Secrets
-
-Add these in repo Settings → Secrets → Actions:
-
-| Secret | Description |
-|--------|-------------|
-| `SSH_PRIVATE_KEY` | Private key for server access |
-| `SSH_HOST` | Server IP or hostname |
-| `SSH_USER` | SSH username |
-| `WORK_DIR` | Deployment path (e.g., `/home/user/sheet_script`) |
-
-### Server Setup
+For Sheets integration via webhook:
 
 ```bash
-# 1. Create .env with service account credentials
-cat > /path/to/sheet_script/.env << 'EOF'
-GOOGLE_SERVICE_ACCOUNT_JSON={"type":"service_account","project_id":"..."}
-SPREADSHEET_ID=your_spreadsheet_id
-WORKSHEET_NAME=TestCases
-EOF
-
-# 2. Install systemd service
-sudo cp sheet-test-runner.service /etc/systemd/system/
-sudo nano /etc/systemd/system/sheet-test-runner.service  # update paths/user
-sudo systemctl daemon-reload
-sudo systemctl enable sheet-test-runner
-sudo systemctl start sheet-test-runner
-
-# 3. Check status
-sudo systemctl status sheet-test-runner
+uv run python server.py
 ```
 
-### Service Account Setup
+Then add `apps_script.js` to your sheet (Extensions → Apps Script) to get a "Run Tests" button.
 
-For server deployment (no browser), use a service account:
+## Contributing
 
-1. Google Cloud Console → IAM → Service Accounts → Create
-2. Download JSON key
-3. Share your spreadsheet with the service account email
-4. Add JSON to `.env` as `GOOGLE_SERVICE_ACCOUNT_JSON`
+Contributions are welcome via pull requests. See [CONTRIBUTING.md](CONTRIBUTING.md) for local development setup.
+
+Deployment is handled automatically by GitHub Actions when PRs are merged.
