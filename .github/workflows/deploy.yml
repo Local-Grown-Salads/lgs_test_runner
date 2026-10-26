@@ -34,18 +34,18 @@ jobs:
 
       - name: Install dependencies and restart service
         run: |
-          ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" << EOF
+          ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" << 'EOF'
             cd ${{ secrets.WORK_DIR }}
 
             # Install uv if not present
             if ! command -v uv &> /dev/null; then
               curl -LsSf https://astral.sh/uv/install.sh | sh
             fi
-            export PATH="\$HOME/.local/bin:\$PATH"
+            export PATH="$HOME/.local/bin:$PATH"
 
             # Install dependencies
             uv sync --no-dev
 
-            # Restart service if configured
+            # Restart service
             sudo systemctl restart sheet-test-runner 2>/dev/null || echo "Service not configured yet"
           EOF
