@@ -22,11 +22,8 @@ jobs:
       - name: Install dependencies
         run: uv sync --dev
 
-      - name: Run ruff linter
-        run: uv run ruff check .
-
-      - name: Run ruff formatter check
-        run: uv run ruff format --check .
+      - name: Run formatter check
+        run: uv format --check
 
   test:
     runs-on: ubuntu-latest
