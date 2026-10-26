@@ -1,6 +1,7 @@
 """Tests for runner/server utility functions."""
 
 import sys
+
 sys.path.insert(0, ".")
 
 from runner import parse_input, normalize_value, extract_spreadsheet_id

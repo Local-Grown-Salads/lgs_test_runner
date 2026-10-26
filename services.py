@@ -6,6 +6,7 @@ Add your own functions here. Each function should:
 - Return a result that can be compared to expected output
 """
 
+
 def add(a: float, b: float) -> float:
     """Add two numbers."""
     return a + b

@@ -78,7 +78,7 @@ def get_sheets_client() -> gspread.Client:
 
     raise HTTPException(
         500,
-        "No credentials found. Set GOOGLE_SERVICE_ACCOUNT_JSON env var or run 'uv run python runner.py' locally first."
+        "No credentials found. Set GOOGLE_SERVICE_ACCOUNT_JSON env var or run 'uv run python runner.py' locally first.",
     )
 
 
@@ -94,15 +94,16 @@ def parse_input(input_str: str) -> list[Any]:
         return []
 
     args = []
-    pattern = r'''(?:"[^"]*"|'[^']*'|[^,]+)'''
+    pattern = r"""(?:"[^"]*"|'[^']*'|[^,]+)"""
     parts = re.findall(pattern, input_str)
 
     for part in parts:
         part = part.strip()
         if not part:
             continue
-        if (part.startswith('"') and part.endswith('"')) or \
-           (part.startswith("'") and part.endswith("'")):
+        if (part.startswith('"') and part.endswith('"')) or (
+            part.startswith("'") and part.endswith("'")
+        ):
             args.append(part[1:-1])
         else:
             try:
@@ -183,7 +184,7 @@ async def run_tests(request: RunRequest):
         worksheet.update_cell(row, status_col, "PASS" if success else "FAIL")
         worksheet.format(
             f"{gspread.utils.rowcol_to_a1(row, status_col)}",
-            {"backgroundColor": GREEN if success else RED}
+            {"backgroundColor": GREEN if success else RED},
         )
 
         if success:
@@ -191,15 +192,17 @@ async def run_tests(request: RunRequest):
         else:
             failed += 1
 
-        details.append({
-            "test_name": test_name,
-            "service": service,
-            "input": input_val,
-            "expected": expected,
-            "actual": actual,
-            "passed": success,
-            "message": message,
-        })
+        details.append(
+            {
+                "test_name": test_name,
+                "service": service,
+                "input": input_val,
+                "expected": expected,
+                "actual": actual,
+                "passed": success,
+                "message": message,
+            }
+        )
 
     return RunResult(passed=passed, failed=failed, total=len(records), details=details)
 
@@ -212,4 +215,5 @@ async def health():
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

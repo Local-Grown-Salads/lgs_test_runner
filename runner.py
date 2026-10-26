@@ -41,7 +41,7 @@ SCOPES = [
 
 # Colors for status cells (RGB 0-1 scale)
 GREEN = {"red": 0.7, "green": 0.9, "blue": 0.7}  # Light green for PASS
-RED = {"red": 0.95, "green": 0.7, "blue": 0.7}   # Light red for FAIL
+RED = {"red": 0.95, "green": 0.7, "blue": 0.7}  # Light red for FAIL
 
 TOKEN_FILE = "token.json"
 
@@ -97,7 +97,7 @@ def parse_input(input_str: str) -> list[Any]:
 
     args = []
     # Split by comma but respect quoted strings
-    pattern = r'''(?:"[^"]*"|'[^']*'|[^,]+)'''
+    pattern = r"""(?:"[^"]*"|'[^']*'|[^,]+)"""
     parts = re.findall(pattern, input_str)
 
     for part in parts:
@@ -106,8 +106,9 @@ def parse_input(input_str: str) -> list[Any]:
             continue
 
         # Check if it's a quoted string
-        if (part.startswith('"') and part.endswith('"')) or \
-           (part.startswith("'") and part.endswith("'")):
+        if (part.startswith('"') and part.endswith('"')) or (
+            part.startswith("'") and part.endswith("'")
+        ):
             args.append(part[1:-1])
         else:
             # Try to parse as number
@@ -164,10 +165,7 @@ def run_test(service_name: str, input_str: str, expected_str: str) -> tuple[bool
 
 def update_cell_color(worksheet, row: int, col: int, color: dict):
     """Update a cell's background color."""
-    worksheet.format(
-        f"{gspread.utils.rowcol_to_a1(row, col)}",
-        {"backgroundColor": color}
-    )
+    worksheet.format(f"{gspread.utils.rowcol_to_a1(row, col)}", {"backgroundColor": color})
 
 
 def extract_spreadsheet_id(value: str) -> str:
@@ -255,7 +253,7 @@ def main():
             print(f"✗ {message}")
             failed += 1
 
-    print(f"\n{'='*40}")
+    print(f"\n{'=' * 40}")
     print(f"Results: {passed} passed, {failed} failed")
 
     return 0 if failed == 0 else 1
