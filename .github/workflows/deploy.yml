@@ -42,5 +42,21 @@ jobs:
 
       - name: Deploy with docker-compose
         run: |
-          ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-            "cd ${{ secrets.WORK_DIR }} && docker compose -p sheet-runner down --remove-orphans --timeout 10 && docker compose -p sheet-runner up -d --build --force-recreate && docker image prune -f"
+          ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" "WORK_DIR='${{ secrets.WORK_DIR }}' bash -s" << 'EOF'
+            cd "$WORK_DIR"
+
+            # Stop only the test-runner service
+            echo "Stopping test-runner service..."
+            docker compose rm -sf test-runner || true
+
+            # Remove old image
+            echo "Removing old image..."
+            docker image rm -f sheet-test-runner:latest 2>/dev/null || true
+
+            # Rebuild and start test-runner only
+            echo "Starting test-runner..."
+            docker compose up -d --build --no-deps test-runner
+
+            # Cleanup
+            docker image prune -f
+          EOF
