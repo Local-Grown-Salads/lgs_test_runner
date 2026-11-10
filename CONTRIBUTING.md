@@ -45,7 +45,28 @@ Then add `apps_script.js` to your sheet (Extensions → Apps Script) to get a "R
 
 ## Docker (Local Testing)
 
-For testing the containerized version locally:
+### With Test Database
+
+For testing services that require a database:
+
+```bash
+# Start Postgres and the test runner
+docker compose up -d
+
+# Check logs
+docker compose logs -f test-runner
+
+# Tear down
+docker compose down -v
+```
+
+This spins up:
+- PostgreSQL with test schema (`Agronomist SDK/init.sql`)
+- Test runner connected to the database
+
+### Standalone (No Database)
+
+For testing without database dependencies:
 
 ```bash
 docker build -t sheet-test-runner .
@@ -54,6 +75,18 @@ docker run -p 8000:8000 \
   -e SPREADSHEET_ID=your_spreadsheet_id \
   sheet-test-runner
 ```
+
+## Service Fixtures
+
+Each service has its own folder with test configuration:
+
+```
+Agronomist SDK/
+├── init.sql      # Database schema and seed data
+└── README.md     # Fixture documentation
+```
+
+See `Agronomist SDK/README.md` for details on test data and fixture setup.
 
 ## Deployment
 
