@@ -1,10 +1,6 @@
-"""Tests for runner/server utility functions."""
+"""Tests for sheets utility functions."""
 
-import sys
-
-sys.path.insert(0, ".")
-
-from runner import parse_input, normalize_value, extract_spreadsheet_id
+from sheet_runner.sheets import extract_spreadsheet_id, normalize_value, parse_input
 
 
 class TestParseInput:

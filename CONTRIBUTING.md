@@ -27,18 +27,16 @@ cp .env.example .env
 # Edit with your spreadsheet ID
 ```
 
-### Run Tests Locally
+### Run Tests
 
 ```bash
-uv run python runner.py
+uv run pytest
 ```
-
-First run opens browser for Google auth. Token is saved for future runs.
 
 ### Run Server Locally
 
 ```bash
-uv run python server.py
+uv run uvicorn sheet_runner:app --reload --port 8000
 ```
 
 Then add `apps_script.js` to your sheet (Extensions → Apps Script) to get a "Run Tests" button.
@@ -78,10 +76,11 @@ docker run -p 8000:8000 \
 
 ## Service Fixtures
 
-Each service has its own folder with test configuration:
+Each service has its own folder matching the spreadsheet worksheet name:
 
 ```
 Agronomist SDK/
+├── fixtures.py   # Client setup and teardown
 ├── init.sql      # Database schema and seed data
 └── README.md     # Fixture documentation
 ```
