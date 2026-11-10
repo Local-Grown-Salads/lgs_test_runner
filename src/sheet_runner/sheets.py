@@ -23,13 +23,12 @@ def get_sheets_client() -> gspread.Client:
     """Get authenticated gspread client.
 
     Supports:
-    - GOOGLE_SERVICE_ACCOUNT_JSON env var (for Docker/server)
+    - GOOGLE_SERVICE_ACCOUNT_FILE env var pointing to JSON file (for Docker/server)
     - token.json file (for local OAuth)
     """
-    sa_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
-    if sa_json:
-        creds_dict = json.loads(sa_json)
-        creds = ServiceAccountCredentials.from_service_account_info(creds_dict, scopes=SCOPES)
+    sa_file = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE")
+    if sa_file and os.path.exists(sa_file):
+        creds = ServiceAccountCredentials.from_service_account_file(sa_file, scopes=SCOPES)
         return gspread.authorize(creds)
 
     if os.path.exists(TOKEN_FILE):
@@ -42,7 +41,7 @@ def get_sheets_client() -> gspread.Client:
 
     raise HTTPException(
         500,
-        "No credentials found. Set GOOGLE_SERVICE_ACCOUNT_JSON env var or run OAuth flow locally.",
+        "No credentials found. Set GOOGLE_SERVICE_ACCOUNT_FILE or run OAuth flow locally.",
     )
 
 

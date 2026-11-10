@@ -72,9 +72,7 @@ async def run_tests(request: RunRequest):
     except gspread.SpreadsheetNotFound:
         raise HTTPException(404, f"Spreadsheet not found: {spreadsheet_id}")
 
-    worksheet = (
-        spreadsheet.worksheet(worksheet_name) if worksheet_name else spreadsheet.sheet1
-    )
+    worksheet = spreadsheet.worksheet(worksheet_name) if worksheet_name else spreadsheet.sheet1
     result = process_worksheet(worksheet)
     return RunResult(**result)
 

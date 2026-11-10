@@ -13,7 +13,9 @@ Configuration and fixtures for testing the [agronomist-sdk](https://github.com/L
 def create():
     """Create and return the fixture instance."""
     from lgs_agronomist_sdk import Client
+
     return Client()
+
 
 def teardown(fixture):
     """Clean up after test."""

@@ -22,8 +22,7 @@ jobs:
 
       - name: Create .env file
         run: |
-          echo 'GOOGLE_SERVICE_ACCOUNT_JSON=${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}' > .env
-          echo 'SPREADSHEET_ID=${{ vars.SPREADSHEET_ID }}' >> .env
+          echo 'SPREADSHEET_ID=${{ vars.SPREADSHEET_ID }}' > .env
           echo 'WORKSHEET_NAME=${{ vars.WORKSHEET_NAME }}' >> .env
 
       - name: Deploy via rsync
@@ -36,6 +35,10 @@ jobs:
             --exclude='client_secrets.json' \
             -e "ssh -o StrictHostKeyChecking=no" \
             ./ "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.WORK_DIR }}/"
+
+      - name: Write service account JSON
+        run: |
+          echo '${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}' | ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" "cat > ${{ secrets.WORK_DIR }}/service_account.json"
 
       - name: Deploy with docker-compose
         run: |
