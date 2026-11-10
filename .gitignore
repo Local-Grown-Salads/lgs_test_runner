@@ -8,3 +8,6 @@ token.json
 __pycache__/
 *.pyc
 .venv/
+
+# Repo manager cache (cloned repos)
+repos/

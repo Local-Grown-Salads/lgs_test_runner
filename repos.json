@@ -1,0 +1,7 @@
+{
+  "Agronomist SDK": {
+    "repo": "git@github.com:Local-Grown-Salads/agronomist-sdk.git",
+    "parent_module": "lgs_agronomist_sdk",
+    "fixtures": "Agronomist SDK/fixtures.py"
+  }
+}

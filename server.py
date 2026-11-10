@@ -21,9 +21,12 @@ from google.oauth2.service_account import Credentials as ServiceAccountCredentia
 from google.auth.transport.requests import Request
 from pydantic import BaseModel
 
-from services import get_service
+from repo_manager import RepoManager
 
 load_dotenv()
+
+# Global repo manager instance
+repo_manager = RepoManager()
 
 app = FastAPI(title="Sheet Test Runner")
 
@@ -138,12 +141,15 @@ def normalize_value(value: Any) -> Any:
     return value
 
 
-def run_test(service_name: str, input_str: str, expected_str: str) -> tuple[bool, str, Any]:
+def run_test(
+    worksheet_name: str, func_name: str, input_str: str, expected_str: str
+) -> tuple[bool, str, Any]:
     """Run a single test. Returns (passed, message, actual_result)."""
+    ctx = None
     try:
-        service_fn = get_service(service_name)
+        ctx = repo_manager.get_function(worksheet_name, func_name)
         args = parse_input(input_str)
-        result = service_fn(*args)
+        result = ctx.func(*args)
         expected = normalize_value(expected_str)
         result_normalized = normalize_value(str(result))
 
@@ -153,6 +159,9 @@ def run_test(service_name: str, input_str: str, expected_str: str) -> tuple[bool
             return False, f"expected {expected}, got {result}", result
     except Exception as e:
         return False, f"ERROR: {e}", None
+    finally:
+        if ctx:
+            ctx.teardown()
 
 
 def process_worksheet(worksheet: gspread.Worksheet) -> RunResult:
@@ -178,7 +187,7 @@ def process_worksheet(worksheet: gspread.Worksheet) -> RunResult:
         input_val = str(record["input"])
         expected = str(record["expected"])
 
-        success, message, actual = run_test(function, input_val, expected)
+        success, message, actual = run_test(worksheet.title, function, input_val, expected)
 
         # Update sheet
         worksheet.update_cell(row, status_col, "PASS" if success else "FAIL")
