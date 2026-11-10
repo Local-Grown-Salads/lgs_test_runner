@@ -43,4 +43,4 @@ jobs:
       - name: Deploy with docker-compose
         run: |
           ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-            "cd ${{ secrets.WORK_DIR }} && docker compose down 2>/dev/null || true && docker compose up -d --build && docker image prune -f"
+            "cd ${{ secrets.WORK_DIR }} && docker compose -p sheet-runner down --remove-orphans --timeout 10 && docker compose -p sheet-runner up -d --build --force-recreate && docker image prune -f"
