@@ -20,6 +20,14 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
+      - name: Create .env file
+        run: |
+          cat > .env << EOF
+          GOOGLE_SERVICE_ACCOUNT_JSON=${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          SPREADSHEET_ID=${{ vars.SPREADSHEET_ID }}
+          WORKSHEET_NAME=${{ vars.WORKSHEET_NAME }}
+          EOF
+
       - name: Deploy via rsync
         run: |
           rsync -avz --delete \
@@ -27,30 +35,11 @@ jobs:
             --exclude='__pycache__' \
             --exclude='.venv' \
             --exclude='token.json' \
-            --exclude='.env' \
             --exclude='client_secrets.json' \
             -e "ssh -o StrictHostKeyChecking=no" \
             ./ "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.WORK_DIR }}/"
 
-      - name: Build and run Docker container
+      - name: Deploy with docker-compose
         run: |
-          ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" << EOF
-            cd ${{ secrets.WORK_DIR }}
-
-            # Stop and remove existing container
-            docker stop sheet-test-runner 2>/dev/null || true
-            docker rm sheet-test-runner 2>/dev/null || true
-
-            # Build new image
-            docker build -t sheet-test-runner .
-
-            # Run with secrets
-            docker run -d \
-              --name sheet-test-runner \
-              -p 8000:8000 \
-              -e GOOGLE_SERVICE_ACCOUNT_JSON='${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}' \
-              -e SPREADSHEET_ID='${{ vars.SPREADSHEET_ID }}' \
-              -e WORKSHEET_NAME='${{ vars.WORKSHEET_NAME }}' \
-              --restart unless-stopped \
-              sheet-test-runner
-          EOF
+          ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            "cd ${{ secrets.WORK_DIR }} && docker compose down 2>/dev/null || true && docker compose up -d --build && docker image prune -f"
