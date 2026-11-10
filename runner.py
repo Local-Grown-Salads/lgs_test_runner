@@ -7,14 +7,14 @@ and updates the sheet with results (green = pass, red = fail).
 
 Spreadsheet DSL Format:
 -----------------------
-| test_name | service | input      | expected | status |
-|-----------|---------|------------|----------|--------|
-| add_basic | add     | 1, 2       | 3        |        |
-| add_neg   | add     | -1, 5      | 4        |        |
-| concat    | concat  | "a", "b"   | ab       |        |
+| test_name | function | input      | expected | status |
+|-----------|----------|------------|----------|--------|
+| add_basic | add      | 1, 2       | 3        |        |
+| add_neg   | add      | -1, 5      | 4        |        |
+| concat    | concat   | "a", "b"   | ab       |        |
 
 - test_name: descriptive name for the test
-- service: function name from services.py (add, subtract, multiply, concat)
+- function: function name from services.py (add, subtract, multiply, concat)
 - input: comma-separated arguments (numbers or quoted strings)
 - expected: expected return value
 - status: left blank, will be updated with PASS/FAIL and colored green/red
@@ -216,7 +216,7 @@ def main():
 
     # Find required columns
     headers = list(records[0].keys())
-    required = ["test_name", "service", "input", "expected", "status"]
+    required = ["test_name", "function", "input", "expected", "status"]
     missing = [h for h in required if h not in headers]
     if missing:
         print(f"Error: Missing required columns: {missing}")
@@ -234,13 +234,13 @@ def main():
     for i, record in enumerate(records):
         row = i + 2  # +2 because row 1 is header, and gspread is 1-indexed
         test_name = record["test_name"]
-        service = record["service"]
+        function = record["function"]
         input_val = str(record["input"])
         expected = str(record["expected"])
 
-        print(f"  [{test_name}] {service}({input_val}) == {expected} ... ", end="")
+        print(f"  [{test_name}] {function}({input_val}) == {expected} ... ", end="")
 
-        success, message = run_test(service, input_val, expected)
+        success, message = run_test(function, input_val, expected)
 
         # Update status cell
         worksheet.update_cell(row, status_col, "PASS" if success else "FAIL")

@@ -5,9 +5,11 @@ Webhook server for running tests from Google Sheets.
 Run with: uv run uvicorn server:app --reload --port 8000
 """
 
+import asyncio
 import json
 import os
 import re
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 import gspread
@@ -46,11 +48,23 @@ class RunRequest(BaseModel):
     worksheet_name: str | None = None
 
 
+class BatchRequest(BaseModel):
+    spreadsheet_id: str | None = None
+
+
 class RunResult(BaseModel):
     passed: int
     failed: int
     total: int
+    worksheet_name: str | None = None
     details: list[dict[str, Any]]
+
+
+class BatchResult(BaseModel):
+    worksheets: list[RunResult]
+    total_passed: int
+    total_failed: int
+    total_tests: int
 
 
 def get_sheets_client() -> gspread.Client:
@@ -141,28 +155,14 @@ def run_test(service_name: str, input_str: str, expected_str: str) -> tuple[bool
         return False, f"ERROR: {e}", None
 
 
-@app.post("/run", response_model=RunResult)
-async def run_tests(request: RunRequest):
-    """Run all tests from the spreadsheet."""
-    spreadsheet_id = request.spreadsheet_id or os.getenv("SPREADSHEET_ID")
-    worksheet_name = request.worksheet_name or os.getenv("WORKSHEET_NAME")
-
-    if not spreadsheet_id:
-        raise HTTPException(400, "No spreadsheet_id provided")
-
-    spreadsheet_id = extract_spreadsheet_id(spreadsheet_id)
-    client = get_sheets_client()
-
-    try:
-        spreadsheet = client.open_by_key(spreadsheet_id)
-    except gspread.SpreadsheetNotFound:
-        raise HTTPException(404, f"Spreadsheet not found: {spreadsheet_id}")
-
-    worksheet = spreadsheet.worksheet(worksheet_name) if worksheet_name else spreadsheet.sheet1
+def process_worksheet(worksheet: gspread.Worksheet) -> RunResult:
+    """Process all tests in a worksheet. Returns RunResult."""
     records = worksheet.get_all_records()
 
     if not records:
-        return RunResult(passed=0, failed=0, total=0, details=[])
+        return RunResult(
+            passed=0, failed=0, total=0, worksheet_name=worksheet.title, details=[]
+        )
 
     headers = list(records[0].keys())
     status_col = headers.index("status") + 1
@@ -174,11 +174,11 @@ async def run_tests(request: RunRequest):
     for i, record in enumerate(records):
         row = i + 2
         test_name = record["test_name"]
-        service = record["service"]
+        function = record["function"]
         input_val = str(record["input"])
         expected = str(record["expected"])
 
-        success, message, actual = run_test(service, input_val, expected)
+        success, message, actual = run_test(function, input_val, expected)
 
         # Update sheet
         worksheet.update_cell(row, status_col, "PASS" if success else "FAIL")
@@ -195,7 +195,7 @@ async def run_tests(request: RunRequest):
         details.append(
             {
                 "test_name": test_name,
-                "service": service,
+                "function": function,
                 "input": input_val,
                 "expected": expected,
                 "actual": actual,
@@ -204,7 +204,73 @@ async def run_tests(request: RunRequest):
             }
         )
 
-    return RunResult(passed=passed, failed=failed, total=len(records), details=details)
+    return RunResult(
+        passed=passed,
+        failed=failed,
+        total=len(records),
+        worksheet_name=worksheet.title,
+        details=details,
+    )
+
+
+@app.post("/run", response_model=RunResult)
+async def run_tests(request: RunRequest):
+    """Run all tests from a single worksheet."""
+    spreadsheet_id = request.spreadsheet_id or os.getenv("SPREADSHEET_ID")
+    worksheet_name = request.worksheet_name or os.getenv("WORKSHEET_NAME")
+
+    if not spreadsheet_id:
+        raise HTTPException(400, "No spreadsheet_id provided")
+
+    spreadsheet_id = extract_spreadsheet_id(spreadsheet_id)
+    client = get_sheets_client()
+
+    try:
+        spreadsheet = client.open_by_key(spreadsheet_id)
+    except gspread.SpreadsheetNotFound:
+        raise HTTPException(404, f"Spreadsheet not found: {spreadsheet_id}")
+
+    worksheet = (
+        spreadsheet.worksheet(worksheet_name) if worksheet_name else spreadsheet.sheet1
+    )
+    return process_worksheet(worksheet)
+
+
+@app.post("/batch", response_model=BatchResult)
+async def batch_run_tests(request: BatchRequest):
+    """Run tests from all worksheets in parallel."""
+    spreadsheet_id = request.spreadsheet_id or os.getenv("SPREADSHEET_ID")
+
+    if not spreadsheet_id:
+        raise HTTPException(400, "No spreadsheet_id provided")
+
+    spreadsheet_id = extract_spreadsheet_id(spreadsheet_id)
+    client = get_sheets_client()
+
+    try:
+        spreadsheet = client.open_by_key(spreadsheet_id)
+    except gspread.SpreadsheetNotFound:
+        raise HTTPException(404, f"Spreadsheet not found: {spreadsheet_id}")
+
+    worksheets = spreadsheet.worksheets()
+
+    # Run worksheets in parallel using thread pool (gspread is sync)
+    loop = asyncio.get_event_loop()
+    with ThreadPoolExecutor() as executor:
+        results = await asyncio.gather(
+            *[loop.run_in_executor(executor, process_worksheet, ws) for ws in worksheets]
+        )
+
+    total_passed = sum(r.passed for r in results)
+    total_failed = sum(r.failed for r in results)
+    total_tests = sum(r.total for r in results)
+
+    return BatchResult(
+        worksheets=list(results),
+        total_passed=total_passed,
+        total_failed=total_failed,
+        total_tests=total_tests,
+    )
 
 
 @app.get("/health")
