@@ -15,7 +15,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from sheet_runner.executor import process_worksheet
+# FIXED: Imported both process_worksheet and generate_html_report here
+from sheet_runner.executor import process_worksheet, generate_html_report
 from sheet_runner.sheets import extract_spreadsheet_id, get_sheets_client
 
 load_dotenv()
@@ -74,6 +75,11 @@ async def run_tests(request: RunRequest):
 
     worksheet = spreadsheet.worksheet(worksheet_name) if worksheet_name else spreadsheet.sheet1
     result = process_worksheet(worksheet)
+    
+    # Generate the report
+    report_file = generate_html_report(result)
+    print(f"Report generated: {report_file}")
+    
     return RunResult(**result)
 
 
@@ -100,6 +106,11 @@ async def batch_run_tests(request: BatchRequest):
         results = await asyncio.gather(
             *[loop.run_in_executor(executor, process_worksheet, ws) for ws in worksheets]
         )
+
+    # Generate the report for each worksheet
+    for r in results:
+        report_file = generate_html_report(r)
+        print(f"Report generated: {report_file}")
 
     total_passed = sum(r["passed"] for r in results)
     total_failed = sum(r["failed"] for r in results)
