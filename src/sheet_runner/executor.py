@@ -99,67 +99,33 @@ def process_worksheet(worksheet: gspread.Worksheet) -> dict[str, Any]:
 
 
 
+
+
 import datetime
+from pathlib import Path
+
+from jinja2 import Environment, FileSystemLoader
+
 
 def generate_html_report(results: dict) -> str:
-    """Generates an HTML report from the results dictionary."""
+    """Generates an HTML report from the results dictionary using a Jinja2 template."""
     filename = f"{results['worksheet_name']}_report.html"
     
-    html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>LGS Test Report - {results['worksheet_name']}</title>
-        <style>
-            body {{ font-family: Arial, sans-serif; background-color: #f4f4f9; padding: 20px; }}
-            h1 {{ color: #333; }}
-            .summary {{ background: white; padding: 15px; border-radius: 5px; margin-bottom: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }}
-            .pass {{ color: green; font-weight: bold; }}
-            .fail {{ color: red; font-weight: bold; }}
-            table {{ width: 100%; border-collapse: collapse; background: white; box-shadow: 0 0 10px rgba(0,0,0,0.1); }}
-            th, td {{ padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }}
-            th {{ background-color: #007bff; color: white; }}
-            tr:hover {{ background-color: #f1f1f1; }}
-        </style>
-    </head>
-    <body>
-        <h1>LGS Test Report: {results['worksheet_name']}</h1>
-        <div class="summary">
-            <p><strong>Date:</strong> {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
-            <p><strong>Total Tests:</strong> {results['total']}</p>
-            <p><strong>Passed:</strong> <span class="pass">{results['passed']}</span></p>
-            <p><strong>Failed:</strong> <span class="fail">{results['failed']}</span></p>
-        </div>
-        
-        <table>
-            <tr>
-                <th>Test Name</th>
-                <th>Function</th>
-                <th>Expected</th>
-                <th>Actual</th>
-                <th>Status</th>
-            </tr>
-    """
+    # Locate the templates directory relative to this file
+    template_dir = Path(__file__).parent / "templates"
     
-    for detail in results['details']:
-        status = '<span class="pass">PASS</span>' if detail['passed'] else f'<span class="fail">FAIL: {detail["message"]}</span>'
-        html += f"""
-            <tr>
-                <td>{detail['test_name']}</td>
-                <td>{detail['function']}</td>
-                <td>{detail['expected']}</td>
-                <td>{detail['actual']}</td>
-                <td>{status}</td>
-            </tr>
-        """
-        
-    html += """
-        </table>
-    </body>
-    </html>
-    """
+    # Set up Jinja2 environment
+    env = Environment(loader=FileSystemLoader(template_dir))
+    template = env.get_template("report.html")
     
+    # Render the HTML
+    html_content = template.render(
+        results=results,
+        date=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    )
+    
+    # Write the file
     with open(filename, "w", encoding="utf-8") as f:
-        f.write(html)
+        f.write(html_content)
         
     return filename
