@@ -4,8 +4,6 @@ Agronomist SDK test fixtures.
 Hand-rolled setup/teardown for testing the agronomist-sdk.
 """
 
-import os
-
 
 def create():
     """Create and return the fixture instance.
