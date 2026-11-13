@@ -1,8 +1,11 @@
 """Test execution logic."""
 
+import datetime
+from pathlib import Path
 from typing import Any
 
 import gspread
+from jinja2 import Environment, FileSystemLoader
 
 from sheet_runner.repo_manager import RepoManager
 from sheet_runner.sheets import GREEN, RED, normalize_value, parse_input
@@ -94,3 +97,26 @@ def process_worksheet(worksheet: gspread.Worksheet) -> dict[str, Any]:
         "worksheet_name": worksheet.title,
         "details": details,
     }
+
+
+def generate_html_report(results: dict) -> str:
+    """Generates an HTML report from the results dictionary using a Jinja2 template."""
+    filename = f"{results['worksheet_name']}_report.html"
+
+    # Locate the templates directory relative to this file
+    template_dir = Path(__file__).parent / "templates"
+
+    # Set up Jinja2 environment
+    env = Environment(loader=FileSystemLoader(template_dir))
+    template = env.get_template("report.html")
+
+    # Render the HTML
+    html_content = template.render(
+        results=results, date=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    )
+
+    # Write the file
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write(html_content)
+
+    return filename
