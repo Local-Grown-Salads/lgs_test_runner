@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LGS Test History Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; padding: 20px; }
+        h1 { color: #333; }
+        .list { background: white; padding: 15px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        li { padding: 10px 0; border-bottom: 1px solid #ddd; }
+        a { text-decoration: none; color: #007bff; font-size: 16px; }
+        a:hover { text-decoration: underline; }
+        .date { color: #666; font-size: 12px; margin-left: 10px; }
+    </style>
+</head>
+<body>
+    <h1>LGS Automated Test History</h1>
+    <div class="list">
+        <ul>
+            {% for report in reports %}
+            <li>
+                <a href="{{ report.filename }}">{{ report.name }}</a>
+                <span class="date">{{ report.date }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</body>
+</html>

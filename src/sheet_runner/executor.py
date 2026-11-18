@@ -1,4 +1,4 @@
-"""Test execution logic."""
+
 
 import datetime
 from pathlib import Path
@@ -100,8 +100,23 @@ def process_worksheet(worksheet: gspread.Worksheet) -> dict[str, Any]:
 
 
 def generate_html_report(results: dict) -> str:
-    """Generates an HTML report from the results dictionary using a Jinja2 template."""
-    filename = f"{results['worksheet_name']}_report.html"
+    """Generates an HTML report and saves it to a history folder."""
+    
+    # Create a reports folder if it doesn't exist
+    reports_dir = Path("reports")
+    reports_dir.mkdir(exist_ok=True)
+    
+    sheet_name = results['worksheet_name']
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    
+    # Format the sheet name cleanly (e.g., "Agronomist SDK Test" -> "Agronomist_SDK_Test")
+    clean_name = sheet_name.replace(" ", "_").replace("-", "_")
+
+    # Save a historical copy with "Report" in the name
+    history_filename = reports_dir / f"{clean_name}_Report_{timestamp}.html"
+    
+    # Also save a "latest" copy
+    latest_filename = reports_dir / f"{clean_name}_Latest_Report.html"
 
     # Locate the templates directory relative to this file
     template_dir = Path(__file__).parent / "templates"
@@ -115,8 +130,59 @@ def generate_html_report(results: dict) -> str:
         results=results, date=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     )
 
-    # Write the file
-    with open(filename, "w", encoding="utf-8") as f:
+    # Write the historical file
+    with open(history_filename, "w", encoding="utf-8") as f:
+        f.write(html_content)
+        
+    # Write the latest file
+    with open(latest_filename, "w", encoding="utf-8") as f:
         f.write(html_content)
 
-    return filename
+    return str(history_filename)
+
+
+def generate_dashboard() -> str:
+    """Scans the reports folder and generates an index.html dashboard."""
+    reports_dir = Path("reports")
+    if not reports_dir.exists():
+        return "No reports directory found."
+        
+    template_dir = Path(__file__).parent / "templates"
+    env = Environment(loader=FileSystemLoader(template_dir))
+    template = env.get_template("index.html")
+    
+    reports = []
+    # Find all HTML files in the reports folder
+    for file in reports_dir.glob("*.html"):
+        # Skip the "_Latest_Report" files so we only show the history
+        if "Latest_Report" in file.name:
+            continue
+            
+        # Extract a readable name and date from the filename
+        # Example: Agronomist_SDK_Report_2026-11-17_21-55-24.html
+        parts = file.stem.rsplit("_", 2)
+        if len(parts) >= 3:
+            name = parts[0].replace("_", " ")
+            date_str = f"{parts[1]} {parts[2].replace('-', ':')}"
+        else:
+            name = file.stem
+            date_str = ""
+            
+        reports.append({
+            "filename": file.name,
+            "name": name,
+            "date": date_str
+        })
+        
+    # Sort reports by filename (which includes the date) in reverse order (newest first)
+    reports.sort(key=lambda x: x["filename"], reverse=True)
+    
+    # Render the dashboard
+    html_content = template.render(reports=reports)
+    
+    # Save it to the reports folder
+    dashboard_file = reports_dir / "index.html"
+    with open(dashboard_file, "w", encoding="utf-8") as f:
+        f.write(html_content)
+        
+    return str(dashboard_file)

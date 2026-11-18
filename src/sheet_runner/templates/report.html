@@ -4,7 +4,7 @@
     <title>LGS Test Report - {{ results.worksheet_name }}</title>
     <style>
         body { font-family: Arial, sans-serif; background-color: #f4f4f9; padding: 20px; }
-        h1 { color: #333; }
+        h1 { color: #333; margin-top: 10px; }
         .summary { background: white; padding: 15px; border-radius: 5px; margin-bottom: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
         .pass { color: green; font-weight: bold; }
         .fail { color: red; font-weight: bold; }
@@ -12,9 +12,26 @@
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
         th { background-color: #007bff; color: white; }
         tr:hover { background-color: #f1f1f1; }
+        
+        /* Styles for the Back Button */
+        .nav-btn { 
+            display: inline-block; 
+            margin-bottom: 20px; 
+            padding: 10px 20px; 
+            background-color: #333; 
+            color: white; 
+            text-decoration: none; 
+            border-radius: 5px; 
+            font-weight: bold; 
+            font-size: 14px;
+        }
+        .nav-btn:hover { background-color: #555; }
     </style>
 </head>
 <body>
+    <!-- The Back Button -->
+    <a href="index.html" class="nav-btn">⬅️ Back to Dashboard</a>
+
     <h1>LGS Test Report: {{ results.worksheet_name }}</h1>
     <div class="summary">
         <p><strong>Date:</strong> {{ date }}</p>
