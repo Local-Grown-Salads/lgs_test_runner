@@ -1,4 +1,4 @@
-from sheet_runner.executor import generate_html_report, generate_dashboard
+from sheet_runner.executor import generate_dashboard, generate_html_report
 
 fake_results = {
     "passed": 1,
@@ -6,9 +6,23 @@ fake_results = {
     "total": 2,
     "worksheet_name": "Agronomist_SDK",
     "details": [
-        {"test_name": "test_1", "function": "func", "expected": "1", "actual": "1", "passed": True, "message": "PASS"},
-        {"test_name": "test_2", "function": "func", "expected": "2", "actual": "3", "passed": False, "message": "expected 2, got 3"}
-    ]
+        {
+            "test_name": "test_1",
+            "function": "func",
+            "expected": "1",
+            "actual": "1",
+            "passed": True,
+            "message": "PASS",
+        },
+        {
+            "test_name": "test_2",
+            "function": "func",
+            "expected": "2",
+            "actual": "3",
+            "passed": False,
+            "message": "expected 2, got 3",
+        },
+    ],
 }
 
 # 1. Generate a test report
